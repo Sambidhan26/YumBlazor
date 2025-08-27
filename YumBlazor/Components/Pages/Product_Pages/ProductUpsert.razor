@@ -1,0 +1,144 @@
+﻿@page "/product/create"
+@page "/product/update/{id:int}"
+@inject IProductRepository _productRepository
+@inject ICategoryRepository _categoryRepository
+@inject NavigationManager NavigationManager
+@inject IJSRuntime _jsRuntimeExtension
+
+<h3>ProductUpsert</h3>
+
+@if (isProcessing)
+{
+    <div class="position-absolute w-75 h-75 d-flex flex-column align-items-center bg-white justify-content-center">
+        <img src="/images/loading.gif" alt="loading">
+    </div>
+}
+else
+{
+    <div class="card shadow border-0 mt-4">
+        <div class="card-header bg-black bg-gradient m-lg-0 py-2">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <h2 class="text-white py-2">@(Id == 0 ? "Create" : "Update")Product</h2>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <EditForm Model="product" FormName="ProductUpsert" OnValidSubmit="UpsertProduct">
+                <DataAnnotationsValidator/>
+                <div class="border p-3 mt-4">
+                    <div class="form-floating py-3 col-12">
+                        <InputText id="Name" class="form-control" @bind-Value="product.Name" placeholder="Enter Product Name" />
+                        <label for="Name">Name</label>
+                        <ValidationMessage For="@(()=>product.Name)">
+                        </ValidationMessage>
+                  </div>
+                </div>
+                    <div class="border p-3 mt-4">
+                        <div class="form-floating py-3 col-12">
+                            <InputText id="Name" class="form-control" @bind-Value="product.Description" placeholder="Description" />
+                            <label for="Description">Description</label>
+                            <ValidationMessage For="@(() => product.Description)">
+                            </ValidationMessage>
+                        </div>
+                    </div>
+                    <div class="border p-3 mt-4">
+                        <div class="form-floating py-3 col-12">
+                            <InputNumber id="Price" class="form-control mt-2" @bind-Value="product.Price" placeholder="Price" />
+                            <label for="Price">Price</label>
+                            <ValidationMessage For="@(() => product.Price)">
+                            </ValidationMessage>
+                        </div>
+                    </div>
+                    <div class="border p-3 mt-4">
+                        <div class="form-floating py-3 col-12">
+                            <InputSelect id="CategoryId" class="form-select mt-2" @bind-Value="product.CategoryId">
+                                <option value="0" disabled selected>-- Select Category --</option>
+                                @foreach (var category in categoriesList)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </InputSelect>
+                            <label for="CategoryId">Category</label>
+                            <ValidationMessage For="@(() => product.CategoryId)">
+                            </ValidationMessage>
+                        </div>
+                    </div>
+                    <div class="row m-3">
+                        <div class="col-6 col-md-3">
+                            <button type="submit" class="btn btn-primary form-control" disabled="@isProcessing">
+                                <i class="bi bi-floppy2-fill"></i>Update
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row m-3">
+                        <div class="col-6 col-md-3">
+                            <a href="product" class="btn btn-secondary form-control" disabled="@isProcessing">
+                               <i class="bi bi-arrow-left-circle"></i>Back to List
+                            </a>
+                        </div>
+                </div>
+            </EditForm>
+
+        </div>
+     </div>
+}
+
+@code {
+
+    [SupplyParameterFromForm]
+    private Product product { get; set; } = new Product();
+
+    private IEnumerable<Category> categoriesList { get; set; } = new List<Category>();
+
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool isProcessing { get; set; } = true;
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadProductAndCategoriesList();
+            isProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadProductAndCategoriesList()
+    {
+        if (Id > 0)
+        {
+
+            product = await _productRepository.GetAsync(Id);
+        }
+        else
+        {
+            //product = await _productRepository.CreateAsync(new Product());
+        }
+
+        categoriesList = await _categoryRepository.GetAllAsync();
+    }
+
+    private async Task UpsertProduct()
+    {
+        isProcessing = true;
+        if (Id > 0)
+        {
+            await _productRepository.UpdateAsync(product);
+            await _jsRuntimeExtension.ToastrSuccess("Product Updated Successfully");
+            
+        }
+        else
+        {
+            await _productRepository.CreateAsync(product);
+            await _jsRuntimeExtension.ToastrSuccess("Product Created Successfully");
+        }
+        isProcessing = false;
+        
+        NavigationManager.NavigateTo("product");
+    }
+
+}

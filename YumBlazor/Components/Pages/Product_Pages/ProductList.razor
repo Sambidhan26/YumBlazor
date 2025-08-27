@@ -1,12 +1,12 @@
-﻿@page "/category"
-@inject ICategoryRepository _categoryRepository
+﻿@page "/product"
+@inject IProductRepository _productRepository
 @inject IJSRuntime _jsRuntimeExtension
 
-<h3>CategoryList</h3>
+<h3>ProductList</h3>
 
 <BsModel OnModalConfirmation="ConfirmDelete"
         ButtonBootStrapStyle="btn-danger"
-        ButtonText="Delete" Title="Are you sure to Delete Category">
+        ButtonText="Delete" Title="Are you sure to Delete Product">
 </BsModel>
 @if(isProcessing)
 {
@@ -20,33 +20,39 @@ else
         <div class="card-header bg-black bg-gradient m-lg-0 py-2">
             <div class="row">
                 <div class="col-12 text-center">
-                    <h2 class="text-white py-2">Category List</h2>
+                    <h2 class="text-white py-2">Product List</h2>
                 </div>
             </div>
         </div>
         <div class="card-body p-4">
             <div class="row pb-3">
                 <div class="col-12 text-end">
-                    <a href="category/create" class="btn btn-lg btn-secondary" style="width:250px"><i class="bi bi-plus-square m-2"></i>Add New Category</a>
+                    <a href="product/create" class="btn btn-lg btn-secondary" style="width:250px"><i class="bi bi-plus-square m-2"></i>Add New Product</a>
                 </div>
             </div>
-            <p>Category's List</p>
-            @if (categoriesList.Any())
+            <p>Product's List</p>
+            @if (productsList.Any())
             {
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Price</th>
+                            <th>Special Tag</th>
+                            <th>Category</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(var obj in categoriesList)
+                        @foreach(var obj in productsList)
                         {
                             <tr>
                                 <td>@obj.Name</td>
+                                <td>@obj.Price</td>
+                                <td>@obj.SpecialTags</td>
+                                <td>@(obj.Category.Name == null ? obj.Category.Name: "No Category")</td>
                                 <td>
-                                    <a href="@($"category/update/{obj.Id}")" class="btn btn-sm btn-primary"><i class="bi bi-pencil-square m-1"></i>Edit</a>
+                                    <a href="@($"product/update/{obj.Id}")" class="btn btn-sm btn-primary"><i class="bi bi-pencil-square m-1"></i>Edit</a>
                                     <button class="btn btn-sm btn-danger" @onclick="()=>HandleDelete(obj.Id)"><i class="bi bi-trash m-1"></i>Delete</button>
                                 </td>
                             </tr>
@@ -60,60 +66,53 @@ else
 
 @code {
     private bool isProcessing { get; set; } = true;
-    private IEnumerable<Category> categoriesList = new List<Category>();
+    private IEnumerable<Product> productsList = new List<Product>();
+    private Category category = new Category();
 
-    private int DeleteCategoryID { get; set; } = 0;
+    private int DeleteProductID { get; set; } = 0;
 
-    protected override async Task OnInitializedAsync()
-    {
-        // isProcessing = true;
-        // // Simulate a delay for loading data
-        // //await Task.Yield();
-        // await LoadCategories();
-        // isProcessing = false;
-    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await LoadCategories();
+            await LoadProducts();
             isProcessing = false;
             StateHasChanged();
         }
     }
 
-    private async Task LoadCategories()
+    private async Task LoadProducts()
     {
-        categoriesList = await _categoryRepository.GetAllAsync();
+        productsList = await _productRepository.GetAllAsync();
     }
 
     private void HandleDelete(int id)
     {
-        DeleteCategoryID = id;
+        DeleteProductID = id;
         _jsRuntimeExtension.InvokeVoidAsync("ShowConfirmationModel");
     }
 
     private async Task ConfirmDelete(bool isConfirmed)
     {
         isProcessing = true;
-        if(isConfirmed && DeleteCategoryID != 0)
+        if(isConfirmed && DeleteProductID != 0)
         {
-            var result = await _categoryRepository.DeleteAsync(DeleteCategoryID);
+            var result = await _productRepository.DeleteAsync(DeleteProductID);
             if(result)
             {
-                await _jsRuntimeExtension.ToastrSuccess("Category Deleted Successfully");
+                await _jsRuntimeExtension.ToastrSuccess("Product Deleted Successfully");
                 await _jsRuntimeExtension.InvokeVoidAsync("HideConfirmationModel");
             }
             else
             {
-                await _jsRuntimeExtension.ToastrError("Error while deleting Category");
+                await _jsRuntimeExtension.ToastrError("Error while deleting Product");
             }
 
-            await LoadCategories();
+            await LoadProducts();
 
         }
         isProcessing = false;
-        DeleteCategoryID = 0;
+        DeleteProductID = 0;
     }
 }
